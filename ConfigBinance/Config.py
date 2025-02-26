@@ -8,8 +8,10 @@
 # P.S. If you use my referral link - Thanks a lot))
 # If you liked this software => Put a star on github - https://github.com/WISEPLAT/backtrader_binance
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-
+import dotenv, os
 
 class Config:
-    BINANCE_API_KEY = "YOUR_API_KEY"
-    BINANCE_API_SECRET = "YOUR_SECRET_KEY"
+    def __init__(self):
+        dotenv.load_dotenv(dotenv_path='ConfigBinance/.env', override=True)        
+        self.BINANCE_API_KEY = os.getenv('BINANCE_API_KEY')
+        self.BINANCE_API_SECRET = os.getenv('BINANCE_API_SECRET')
