@@ -2,3 +2,4 @@ python-binance
 backtrader
 pandas
 matplotlib
+python-dotenv
