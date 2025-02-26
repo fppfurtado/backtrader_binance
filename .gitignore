@@ -1,1 +1,3 @@
 .venv/
+ConfigBinance/.env
+__pycache__
