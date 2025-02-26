@@ -1,5 +1,10 @@
 import datetime as dt
 import backtrader as bt
+import sys,os
+
+# Adiciona o diretório raiz ao sys.path para garantir que o Python consiga encontrar os módulos
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
 from backtrader_binance import BinanceStore
 from ConfigBinance.Config import Config  # Configuration file
 from Strategy import StrategyJustPrintsOHLCVAndState  # Trading System
