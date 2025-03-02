@@ -99,6 +99,8 @@ class BinanceStore(object):
     
     @retry
     def create_order(self, symbol, side, type, size, price):
+        if type == None: type = ORDER_TYPE_MARKET
+
         params = dict()
         if type in [ORDER_TYPE_LIMIT, ORDER_TYPE_STOP_LOSS_LIMIT]:
             params.update({
