@@ -60,7 +60,7 @@ class BinanceStore(object):
         precision = step.find('1') - 1
         if precision > 0:
             return '{:0.0{}f}'.format(float(value), precision)
-        return floor(int(value))
+        return floor(value)
         
     def retry(func):
         @wraps(func)
