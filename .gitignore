@@ -2,3 +2,4 @@
 ConfigBinance/.env
 __pycache__
 .env
+*.db
