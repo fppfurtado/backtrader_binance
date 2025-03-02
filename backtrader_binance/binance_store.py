@@ -102,6 +102,12 @@ class BinanceStore(object):
         if type == None: type = ORDER_TYPE_MARKET
 
         params = dict()
+
+        if type != ORDER_TYPE_MARKET:
+            params.update({
+                'price': self.format_price(symbol, price)
+            })
+           
         if type in [ORDER_TYPE_LIMIT, ORDER_TYPE_STOP_LOSS_LIMIT]:
             params.update({
                 'timeInForce': TIME_IN_FORCE_GTC
@@ -110,11 +116,7 @@ class BinanceStore(object):
             params.update({
                 'stopPrice': self.format_price(symbol, price)
             })
-        elif type != ORDER_TYPE_MARKET:
-            params.update({
-                'price': self.format_price(symbol, price)
-            })
-
+                
         return self.binance.create_order(
             symbol=symbol,
             side=side,
