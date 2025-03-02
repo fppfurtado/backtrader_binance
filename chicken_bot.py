@@ -106,7 +106,7 @@ class ChickenStrategy(bt.Strategy):
                 else:
                     self._executed_sell_orders_counter += 1
                     self._last_trade_date = bt.num2date(self.data.datetime[0]).date()
-                    self._cumputes_trade_return(order)
+                    self._computes_trade_return(order)
             case bt.Order.Margin:
                 self._log_info('ORDER MARGIN(%s)' % (order.ref))
 
@@ -158,7 +158,7 @@ class ChickenStrategy(bt.Strategy):
         if sell_value > min_order_value:
             self.sell(exectype=bt.Order.Limit, size=order.size, price=sell_price)
 
-    def _cumputes_trade_return(self, order):
+    def _computes_trade_return(self, order):
         sell_price = order.executed.price
         buy_price = order.executed.price/(1 + self.p.target_profit)
         order_return =  (sell_price - buy_price)*(-order.size)
