@@ -4,6 +4,7 @@ import backtrader as bt
 import database as db
 from dotenv import load_dotenv
 from backtrader_binance import BinanceStore
+from binance.exceptions import BinanceAPIException
 
 logger = logging.getLogger('trader')
 
@@ -33,10 +34,13 @@ def __main():
         timeframe=bt.TimeFrame.Minutes, 
         compression=1, 
         target_profit=0.0025, 
-        live_bars=False
+        live_bars=True
     )
 
-    cerebro.run()
+    try:
+        cerebro.run()
+    except BinanceAPIException as e:
+        print(f'BinanceAPIException {e.code}: {e.message}')
 
 def setup_logging():
     config_file = pathlib.Path('logging.config.json')
@@ -57,7 +61,8 @@ def setup_engine(store, strategy_cls, symbol, timeframe, compression, target_pro
         cerebro.setbroker(broker)
     
     # Historical 1-minute bars for the last hour + new live bars / timeframe M1
-    from_date = dt.datetime.now() - dt.timedelta(days=10)
+    # from_date = dt.datetime.now() - dt.timedelta(days=10)
+    from_date = dt.datetime.now()
     data = store.getdata(timeframe=timeframe, compression=compression, dataname=symbol, start_date=from_date, LiveBars=live_bars)
     
     cerebro.adddata(data)  # Adding data
