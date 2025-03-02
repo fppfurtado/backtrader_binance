@@ -112,7 +112,7 @@ class BinanceStore(object):
             params.update({
                 'timeInForce': TIME_IN_FORCE_GTC
             })
-        if type == ORDER_TYPE_STOP_LOSS:
+        elif type == ORDER_TYPE_STOP_LOSS:
             params.update({
                 'stopPrice': self.format_price(symbol, price)
             })
