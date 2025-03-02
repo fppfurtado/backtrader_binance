@@ -1,6 +1,7 @@
 import os, datetime as dt
 import logging.config, json, pathlib, atexit
 import backtrader as bt
+import database as db
 from dotenv import load_dotenv
 from backtrader_binance import BinanceStore
 
@@ -165,6 +166,17 @@ class ChickenStrategy(bt.Strategy):
         self._log_info(f'TRADE RETURN = {round(order_return, 2)}')
         self._total_profit = self._total_profit + order_return
         self._log_info(f'TOTAL PROFIT/LOSS = {round(self._total_profit, 2)}')
+
+    def _save_in_database(self, order):
+        db.save_trade(
+            bt.num2date(order.executed.dt),
+            'BUY' if order.ordtype == 0 else 'SELL',
+            self.symbol,
+            order.executed.price,
+            order.size,
+            order.executed.comm,
+            'BINANCE'
+        )
 
     def _log_debug(self, txt, dt=None, carriage_return=False):
         self._log('d', txt, dt, carriage_return)
