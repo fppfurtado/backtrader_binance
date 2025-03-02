@@ -101,10 +101,12 @@ class ChickenStrategy(bt.Strategy):
                 self._log_info(log_message)
                 self._log_info(f'POSITION SIZE: {self.position.size:.5f}')
                 
-                if order.isbuy():        
+                if order.isbuy():
+                    self._save_in_database(order)
                     self._executed_buy_orders_counter += 1
                     self._close_trade_position(order)
                 else:
+                    self._save_in_database(order)
                     self._executed_sell_orders_counter += 1
                     self._last_trade_date = bt.num2date(self.data.datetime[0]).date()
                     self._computes_trade_return(order)
