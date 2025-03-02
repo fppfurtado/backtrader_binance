@@ -122,7 +122,7 @@ class BinanceStore(object):
             side=side,
             type=type,
             quantity=self.format_quantity(symbol, size),
-            newOrderRespType='RESULT',
+            newOrderRespType='FULL',
             **params)
 
     def format_price(self, symbol, price):
