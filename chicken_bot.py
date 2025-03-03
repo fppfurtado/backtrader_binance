@@ -62,7 +62,7 @@ def setup_engine(store, strategy_cls, symbol, timeframe, compression, target_pro
     
     # Historical 1-minute bars for the last hour + new live bars / timeframe M1
     # from_date = dt.datetime.now() - dt.timedelta(days=10)
-    from_date = dt.datetime.now()
+    from_date = None
     data = store.getdata(timeframe=timeframe, compression=compression, dataname=symbol, start_date=from_date, LiveBars=live_bars)
     
     cerebro.adddata(data)  # Adding data
