@@ -98,10 +98,8 @@ class BinanceStore(object):
             raise err
     
     @retry
-    def create_order(self, symbol, side, type, size, price):
+    def create_order(self, symbol, side, type, size, price, **params):
         if type == None: type = ORDER_TYPE_MARKET
-
-        params = dict()
 
         if type != ORDER_TYPE_MARKET:
             params.update({
@@ -116,12 +114,14 @@ class BinanceStore(object):
             params.update({
                 'stopPrice': self.format_price(symbol, price)
             })
+        
+        if size is not None: size = self.format_quantity(symbol, size)
                 
         return self.binance.create_order(
             symbol=symbol,
             side=side,
             type=type,
-            quantity=self.format_quantity(symbol, size),
+            quantity=size,
             newOrderRespType='FULL',
             **params)
 

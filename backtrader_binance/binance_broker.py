@@ -107,10 +107,10 @@ class BinanceBroker(BrokerBase):
         elif binance_order_status == ORDER_STATUS_REJECTED:
             order.reject()
 
-    def _submit(self, owner, data, side, exectype, size, price):
+    def _submit(self, owner, data, side, exectype, size, price, **kwargs):
         type = self._ORDER_TYPES.get(exectype, ORDER_TYPE_MARKET)
         symbol = data._name
-        binance_order = self._store.create_order(symbol, side, type, size, price)
+        binance_order = self._store.create_order(symbol, side, type, size, price, **kwargs)
         # print(1111, binance_order)
         # 1111 {'symbol': 'ETHUSDT', 'orderId': 15860400971, 'orderListId': -1, 'clientOrderId': 'EO7lLPcYNZR8cNEg8AOEPb', 'transactTime': 1707124560731, 'price': '0.00000000', 'origQty': '0.00220000', 'executedQty': '0.00220000', 'cummulativeQuoteQty': '5.10356000', 'status': 'FILLED', 'timeInForce': 'GTC', 'type': 'MARKET', 'side': 'BUY', 'workingTime': 1707124560731, 'fills': [{'price': '2319.80000000', 'qty': '0.00220000', 'commission': '0.00000220', 'commissionAsset': 'ETH', 'tradeId': 1297261843}], 'selfTradePreventionMode': 'EXPIRE_MAKER'}
         order = BinanceOrder(owner, data, exectype, binance_order)
@@ -138,7 +138,9 @@ class BinanceBroker(BrokerBase):
             exectype=None, valid=None, tradeid=0, oco=None,
             trailamount=None, trailpercent=None,
             **kwargs):
-        return self._submit(owner, data, SIDE_BUY, exectype, size, price)
+        if kwargs['quoteOrderQty'] is not None:
+            size = None
+        return self._submit(owner, data, SIDE_BUY, exectype, size, price, quoteOrderQty=kwargs['quoteOrderQty'])
 
     def cancel(self, order):
         order_id = order.binance_order['orderId']
