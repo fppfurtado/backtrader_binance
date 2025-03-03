@@ -176,7 +176,7 @@ class ChickenStrategy(bt.Strategy):
 
     def _save_in_database(self, order):
         db.save_trade(
-            bt.num2date(order.executed.dt),
+            order.executed.dt.strftime('%Y-%m-%d %H:%M:%S'),
             'BUY' if order.ordtype == 0 else 'SELL',
             self.symbol,
             order.executed.price,
