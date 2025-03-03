@@ -156,7 +156,7 @@ class ChickenStrategy(bt.Strategy):
         min_order_size = float(self.store._min_order[self.symbol]) 
         
         if order_size >= min_order_size:
-            self.buy(size=order_size)
+            self.buy(quoteOrderQty=stake)
 
     def _close_trade_position(self, order):
         sell_price = order.executed.price * (1 + self.p.target_profit)
