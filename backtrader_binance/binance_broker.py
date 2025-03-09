@@ -180,3 +180,18 @@ class BinanceBroker(BrokerBase):
              trailamount=None, trailpercent=None,
              **kwargs):
         return self._submit(owner, data, SIDE_SELL, exectype, size, price)
+
+    def set_cash(self, cash):
+        '''Sets the cash parameter (alias: ``setcash``)'''
+        self._store.get_balance()
+
+        if cash <= self._store._cash:
+            self.startingcash = self.cash = cash
+
+    setcash = set_cash
+
+    def add_cash(self, cash):
+        self._store.get_balance()
+        
+        if self.cash + cash <= self._store._cash:
+            self.cash += cash
