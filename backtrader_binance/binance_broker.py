@@ -43,8 +43,8 @@ class BinanceBroker(BrokerBase):
         self.notifs = deque()
         self.positions = defaultdict(Position)
 
-        self.startingcash = self.cash = 0  # Стартовые и текущие свободные средства по счету
-        self.startingvalue = self.value = 0  # Стартовая и текущая стоимость позиций
+        self.startingcash = self.cash = 0
+        self.startingvalue = self.value = self.cash
 
         self.open_orders = list()
     
@@ -52,8 +52,7 @@ class BinanceBroker(BrokerBase):
         self._store.binance_socket.start_user_socket(self._handle_user_socket_message)
 
     def start(self):
-        self.startingcash = self.cash = self.getcash()  # Стартовые и текущие свободные средства по счету. Подписка на позиции для портфеля/биржи
-        self.startingvalue = self.value = self.getvalue()  # Стартовая и текущая стоимость позиций
+        pass
 
     def _execute_order(self, order, date, executed_size, executed_price, executed_value, executed_comm):
         order.execute(
@@ -154,7 +153,6 @@ class BinanceBroker(BrokerBase):
         return self._store.get_asset_balance(asset)
 
     def getcash(self):
-        self.cash = self._store._cash
         return self.cash
 
     def get_notification(self):
@@ -181,3 +179,18 @@ class BinanceBroker(BrokerBase):
              trailamount=None, trailpercent=None,
              **kwargs):
         return self._submit(owner, data, SIDE_SELL, exectype, size, price)
+
+    def set_cash(self, cash):
+        '''Sets the cash parameter (alias: ``setcash``)'''
+        self._store.get_balance()
+
+        if cash <= self._store._cash:
+            self.startingcash = self.cash = cash
+
+    setcash = set_cash
+
+    def add_cash(self, cash):
+        self._store.get_balance()
+        
+        if self.cash + cash <= self._store._cash:
+            self.cash += cash
