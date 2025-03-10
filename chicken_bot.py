@@ -95,7 +95,7 @@ class ChickenStrategy(bt.Strategy):
         self._last_trade_date = None
 
     def next(self):
-        self._log_info('Position %.5f, Cash %.2f, Close %.2f, High %.2f, Low %.2f' % (self.position.size, self.broker.getcash(), self.closing_prices[0], self.asset.high[0], self.asset.low[0]))
+        self._log_info(f'Portfolio {self.broker.getvalue(self.datas):.2f}, Cash {self.broker.getcash():.2f}, Position {self.position.size:.5f}, Open {self.asset.open[0]:.2f}, High {self.asset.high[0]:.2f}, Low {self.asset.low[0]:.2f}, Close {self.closing_prices[0]:.2f}')
         
         if self._has_buy_signal():
             if not self.position:
