@@ -7,28 +7,6 @@ from math import copysign
 from backtrader.broker import BrokerBase
 from backtrader.order import *
 from backtrader.position import Position
-from binance.enums import *
-
-
-class BinanceOrder(OrderBase):
-    def __init__(self, owner, data, exectype, binance_order):
-        self.owner = owner
-        self.data = data
-        self.exectype = exectype
-        self.ordtype = self.Buy if binance_order['side'] == SIDE_BUY else self.Sell
-        
-        # Market order price is zero
-        if self.exectype == Order.Market:
-            self.size = float(binance_order['executedQty'])
-            self.price = sum(float(fill['price']) for fill in binance_order['fills']) / len(binance_order['fills'])  # Average price
-        else:
-            self.size = float(binance_order['origQty'])
-            self.price = float(binance_order['price'])
-        self.binance_order = binance_order
-        
-        super(BinanceOrder, self).__init__()
-        self.accept()
-
 
 class BinanceBroker(BrokerBase):
     _ORDER_TYPES = {
