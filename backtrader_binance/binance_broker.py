@@ -1,10 +1,11 @@
 import datetime as dt
+import binance.enums as be
 
 from collections import defaultdict, deque
 from math import copysign
 
 from backtrader.broker import BrokerBase
-from backtrader.order import Order, OrderBase
+from backtrader.order import *
 from backtrader.position import Position
 from binance.enums import *
 
@@ -31,10 +32,10 @@ class BinanceOrder(OrderBase):
 
 class BinanceBroker(BrokerBase):
     _ORDER_TYPES = {
-        Order.Limit: ORDER_TYPE_LIMIT,
-        Order.Market: ORDER_TYPE_MARKET,
-        Order.Stop: ORDER_TYPE_STOP_LOSS,
-        Order.StopLimit: ORDER_TYPE_STOP_LOSS_LIMIT,
+        Order.Limit: be.ORDER_TYPE_LIMIT,
+        Order.Market: be.ORDER_TYPE_MARKET,
+        Order.Stop: be.ORDER_TYPE_STOP_LOSS,
+        Order.StopLimit: be.ORDER_TYPE_STOP_LOSS_LIMIT,
     }
 
     def __init__(self, store):
@@ -78,7 +79,7 @@ class BinanceBroker(BrokerBase):
             if msg['s'] in self._store.symbols:
                 for o in self.open_orders:
                     if o.binance_order['orderId'] == msg['i']:
-                        if msg['X'] in [ORDER_STATUS_FILLED, ORDER_STATUS_PARTIALLY_FILLED]:
+                        if msg['X'] in [be.ORDER_STATUS_FILLED, be.ORDER_STATUS_PARTIALLY_FILLED]:
                             _dt = dt.datetime.fromtimestamp(int(msg['T']) / 1000)
                             executed_size = float(msg['l'])
                             executed_price = float(msg['L'])
@@ -95,15 +96,15 @@ class BinanceBroker(BrokerBase):
             raise msg
     
     def _set_order_status(self, order, binance_order_status):
-        if binance_order_status == ORDER_STATUS_CANCELED:
+        if binance_order_status == be.ORDER_STATUS_CANCELED:
             order.cancel()
-        elif binance_order_status == ORDER_STATUS_EXPIRED:
+        elif binance_order_status == be.ORDER_STATUS_EXPIRED:
             order.expire()
-        elif binance_order_status == ORDER_STATUS_FILLED:
+        elif binance_order_status == be.ORDER_STATUS_FILLED:
             order.completed()
-        elif binance_order_status == ORDER_STATUS_PARTIALLY_FILLED:
+        elif binance_order_status == be.ORDER_STATUS_PARTIALLY_FILLED:
             order.partial()
-        elif binance_order_status == ORDER_STATUS_REJECTED:
+        elif binance_order_status == be.ORDER_STATUS_REJECTED:
             order.reject()
 
     def _submit(self, owner, data, side, exectype, size, price, **kwargs):
