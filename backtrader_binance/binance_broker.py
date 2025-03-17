@@ -206,8 +206,12 @@ class BinanceBroker(BrokerBase):
              exectype=None, valid=None, tradeid=0, oco=None,
              trailamount=None, trailpercent=None,
              **kwargs):
-        return self._submit(owner, data, SIDE_SELL, exectype, size, price)
-
+        order = SellOrder(owner=owner, data=data,
+                         size=size, price=price, pricelimit=plimit,
+                         exectype=exectype, valid=valid)
+        order.addinfo(**kwargs)
+        return self._submit(order)
+        
     def set_cash(self, cash):
         '''Sets the cash parameter (alias: ``setcash``)'''
         self._store.get_balance()
