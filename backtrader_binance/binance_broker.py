@@ -1,40 +1,19 @@
 import datetime as dt
+import binance.enums as be
 
 from collections import defaultdict, deque
 from math import copysign
 
 from backtrader.broker import BrokerBase
-from backtrader.order import Order, OrderBase
+from backtrader.order import *
 from backtrader.position import Position
-from binance.enums import *
-
-
-class BinanceOrder(OrderBase):
-    def __init__(self, owner, data, exectype, binance_order):
-        self.owner = owner
-        self.data = data
-        self.exectype = exectype
-        self.ordtype = self.Buy if binance_order['side'] == SIDE_BUY else self.Sell
-        
-        # Market order price is zero
-        if self.exectype == Order.Market:
-            self.size = float(binance_order['executedQty'])
-            self.price = sum(float(fill['price']) for fill in binance_order['fills']) / len(binance_order['fills'])  # Average price
-        else:
-            self.size = float(binance_order['origQty'])
-            self.price = float(binance_order['price'])
-        self.binance_order = binance_order
-        
-        super(BinanceOrder, self).__init__()
-        self.accept()
-
 
 class BinanceBroker(BrokerBase):
     _ORDER_TYPES = {
-        Order.Limit: ORDER_TYPE_LIMIT,
-        Order.Market: ORDER_TYPE_MARKET,
-        Order.Stop: ORDER_TYPE_STOP_LOSS,
-        Order.StopLimit: ORDER_TYPE_STOP_LOSS_LIMIT,
+        Order.Limit: be.ORDER_TYPE_LIMIT,
+        Order.Market: be.ORDER_TYPE_MARKET,
+        Order.Stop: be.ORDER_TYPE_STOP_LOSS,
+        Order.StopLimit: be.ORDER_TYPE_STOP_LOSS_LIMIT,
     }
 
     def __init__(self, store):
@@ -78,7 +57,7 @@ class BinanceBroker(BrokerBase):
             if msg['s'] in self._store.symbols:
                 for o in self.open_orders:
                     if o.binance_order['orderId'] == msg['i']:
-                        if msg['X'] in [ORDER_STATUS_FILLED, ORDER_STATUS_PARTIALLY_FILLED]:
+                        if msg['X'] in [be.ORDER_STATUS_FILLED, be.ORDER_STATUS_PARTIALLY_FILLED]:
                             _dt = dt.datetime.fromtimestamp(int(msg['T']) / 1000)
                             executed_size = float(msg['l'])
                             executed_price = float(msg['L'])
@@ -95,51 +74,77 @@ class BinanceBroker(BrokerBase):
             raise msg
     
     def _set_order_status(self, order, binance_order_status):
-        if binance_order_status == ORDER_STATUS_CANCELED:
+        if binance_order_status == be.ORDER_STATUS_CANCELED:
             order.cancel()
-        elif binance_order_status == ORDER_STATUS_EXPIRED:
+        elif binance_order_status == be.ORDER_STATUS_EXPIRED:
             order.expire()
-        elif binance_order_status == ORDER_STATUS_FILLED:
+        elif binance_order_status == be.ORDER_STATUS_FILLED:
             order.completed()
-        elif binance_order_status == ORDER_STATUS_PARTIALLY_FILLED:
+        elif binance_order_status == be.ORDER_STATUS_PARTIALLY_FILLED:
             order.partial()
-        elif binance_order_status == ORDER_STATUS_REJECTED:
+        elif binance_order_status == be.ORDER_STATUS_REJECTED:
             order.reject()
 
-    def _submit(self, owner, data, side, exectype, size, price, **kwargs):
-        type = self._ORDER_TYPES.get(exectype, ORDER_TYPE_MARKET)
-        symbol = data._name
-        binance_order = self._store.create_order(symbol, side, type, size, price, **kwargs)
+    def _submit(self, order):
+        type = self._ORDER_TYPES.get(order.exectype, be.ORDER_TYPE_MARKET)
+        symbol = order.data.symbol
+        side = be.SIDE_BUY if order.ordtype == Order.Buy else be.SIDE_SELL
+        size = abs(order.size) if order.size else None
+        binance_order = self._store.create_order(symbol, side, type, size, order.price, **order.info)
+        order.executed.remsize = float(binance_order['executedQty'])
+        order.submit()
         # print(1111, binance_order)
         # 1111 {'symbol': 'ETHUSDT', 'orderId': 15860400971, 'orderListId': -1, 'clientOrderId': 'EO7lLPcYNZR8cNEg8AOEPb', 'transactTime': 1707124560731, 'price': '0.00000000', 'origQty': '0.00220000', 'executedQty': '0.00220000', 'cummulativeQuoteQty': '5.10356000', 'status': 'FILLED', 'timeInForce': 'GTC', 'type': 'MARKET', 'side': 'BUY', 'workingTime': 1707124560731, 'fills': [{'price': '2319.80000000', 'qty': '0.00220000', 'commission': '0.00000220', 'commissionAsset': 'ETH', 'tradeId': 1297261843}], 'selfTradePreventionMode': 'EXPIRE_MAKER'}
-        order = BinanceOrder(owner, data, exectype, binance_order)
-        if binance_order['status'] in [ORDER_STATUS_FILLED, ORDER_STATUS_PARTIALLY_FILLED]:
-            avg_price =0.0
-            comm = 0.0
-            for f in binance_order['fills']:
-                comm += float(f['commission'])
-                avg_price += float(f['price'])
-            avg_price = self._store.format_price(symbol, avg_price/len(binance_order['fills']))
-            self._execute_order(
-                order,
-                dt.datetime.fromtimestamp(binance_order['transactTime'] / 1000),
-                float(binance_order['executedQty']),
-                float(avg_price),
-                float(binance_order['cummulativeQuoteQty']),
-                float(comm))
-        self._set_order_status(order, binance_order['status'])
-        if order.status == Order.Accepted:
-            self.open_orders.append(order)
+        # order = BinanceOrder(owner, data, exectype, binance_order)
+        match binance_order['status']:
+            case be.ORDER_STATUS_NEW:
+                order.accept()
+            case be.ORDER_STATUS_PARTIALLY_FILLED:
+                self._process_order_trades(order, binance_order['transactTime'], binance_order['fills'])
+                order.partial()
+            case be.ORDER_STATUS_FILLED:
+                self._process_order_trades(order, binance_order['transactTime'], binance_order['fills'])                
+                order.completed()    
+            case be.ORDER_STATUS_REJECTED:
+                order.reject()
+        
         self.notify(order)
         return order
+    
+    def _process_order_trades(self, order, transact_time, trades):
+        comminfo = self.getcommissioninfo(order.data)
+        position = self.positions[order.data]
+        pprice_old = position.price
+        # size = float(executedQty)
+        date = dt.datetime.fromtimestamp(int(transact_time)/1000)
+        
+        for trade in trades:
+            price = float(trade['price'])
+            size = float(trade['qty']) if order.ordtype == Order.Buy else -float(trade['qty'])
+            psize, pprice, opened, closed = position.pseudoupdate(size, price)
+            openedvalue = opened * price if opened else 0.0
+            openedcomm = float(trade['commission']) if opened else 0.0
+            closedvalue = closed * price if closed else 0.0
+            closedcomm = float(trade['commission']) if closed else 0.0
+            margin = comminfo.margin
+            pnl = comminfo.profitandloss(-closed, pprice_old, pprice)
+
+            order.execute(date, size, price,
+                closed, closedvalue, closedcomm,
+                opened, openedvalue, openedcomm,
+                margin, pnl,
+                psize, pprice)
+            order.addcomminfo(comminfo)
 
     def buy(self, owner, data, size, price=None, plimit=None,
             exectype=None, valid=None, tradeid=0, oco=None,
             trailamount=None, trailpercent=None,
             **kwargs):
-        if kwargs['quoteOrderQty'] is not None:
-            size = None
-        return self._submit(owner, data, SIDE_BUY, exectype, size, price, quoteOrderQty=kwargs['quoteOrderQty'])
+        order = BuyOrder(owner=owner, data=data,
+                         size=size, price=price, pricelimit=plimit,
+                         exectype=exectype, valid=valid)
+        order.addinfo(**kwargs)
+        return self._submit(order)
 
     def cancel(self, order):
         order_id = order.binance_order['orderId']
@@ -178,8 +183,12 @@ class BinanceBroker(BrokerBase):
              exectype=None, valid=None, tradeid=0, oco=None,
              trailamount=None, trailpercent=None,
              **kwargs):
-        return self._submit(owner, data, SIDE_SELL, exectype, size, price)
-
+        order = SellOrder(owner=owner, data=data,
+                         size=size, price=price, pricelimit=plimit,
+                         exectype=exectype, valid=valid)
+        order.addinfo(**kwargs)
+        return self._submit(order)
+        
     def set_cash(self, cash):
         '''Sets the cash parameter (alias: ``setcash``)'''
         self._store.get_balance()

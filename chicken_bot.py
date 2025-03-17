@@ -5,6 +5,7 @@ import database as db
 from dotenv import load_dotenv
 from backtrader_binance import BinanceStore
 from binance.exceptions import BinanceAPIException
+from backtrader.utils.py3 import string_types
 
 logger = logging.getLogger('trader')
 
@@ -60,7 +61,7 @@ def setup_engine(store, strategy_cls, symbol, timeframe, compression, target_pro
         broker = store.getbroker()
         cerebro.setbroker(broker)
 
-    cerebro.broker.set_cash(1000)
+    cerebro.broker.set_cash(30000)
     
     # Historical 1-minute bars for the last hour + new live bars / timeframe M1
     # from_date = dt.datetime.now() - dt.timedelta(days=10)
@@ -150,6 +151,40 @@ class ChickenStrategy(bt.Strategy):
             self.asset.low[index],
             self.asset.close[index]
         ]
+    
+    def buy(self, data=None,
+            size=None, price=None, plimit=None,
+            exectype=None, valid=None, tradeid=0, oco=None,
+            trailamount=None, trailpercent=None,
+            parent=None, transmit=True,
+            **kwargs):
+        if isinstance(data, string_types):
+            data = self.getdatabyname(data)
+        
+        data = data if data is not None else self.datas[0]
+
+        return self.broker.buy(
+                self, data,
+                size=size, price=price, plimit=plimit,
+                exectype=exectype, valid=valid,
+                **kwargs)
+    
+    def sell(self, data=None,
+            size=None, price=None, plimit=None,
+            exectype=None, valid=None, tradeid=0, oco=None,
+            trailamount=None, trailpercent=None,
+            parent=None, transmit=True,
+            **kwargs):
+        if isinstance(data, string_types):
+            data = self.getdatabyname(data)
+        
+        data = data if data is not None else self.datas[0]
+
+        return self.broker.sell(
+                self, data,
+                size=abs(size), price=price, plimit=plimit,
+                exectype=exectype, valid=valid,
+                **kwargs)
 
     def _open_trade_position(self):
         stake = self.broker.getcash()
@@ -162,11 +197,11 @@ class ChickenStrategy(bt.Strategy):
 
     def _close_trade_position(self, order):
         sell_price = order.executed.price * (1 + self.p.target_profit)
-        sell_value = sell_price * order.size
+        sell_value = sell_price * order.executed.size
         min_order_value = float(self.store._min_order_in_target[self.symbol])
         
         if sell_value > min_order_value:
-            self.sell(exectype=bt.Order.Limit, size=order.size, price=sell_price)
+            self.sell(exectype=bt.Order.Limit, size=order.executed.size, price=sell_price)
 
     def _computes_trade_return(self, order):
         sell_price = order.executed.price
