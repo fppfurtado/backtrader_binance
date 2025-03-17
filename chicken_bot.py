@@ -61,7 +61,7 @@ def setup_engine(store, strategy_cls, symbol, timeframe, compression, target_pro
         broker = store.getbroker()
         cerebro.setbroker(broker)
 
-    cerebro.broker.set_cash(1000)
+    cerebro.broker.set_cash(30000)
     
     # Historical 1-minute bars for the last hour + new live bars / timeframe M1
     # from_date = dt.datetime.now() - dt.timedelta(days=10)
