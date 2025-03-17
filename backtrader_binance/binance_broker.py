@@ -163,9 +163,11 @@ class BinanceBroker(BrokerBase):
             exectype=None, valid=None, tradeid=0, oco=None,
             trailamount=None, trailpercent=None,
             **kwargs):
-        if kwargs['quoteOrderQty'] is not None:
-            size = None
-        return self._submit(owner, data, SIDE_BUY, exectype, size, price, quoteOrderQty=kwargs['quoteOrderQty'])
+        order = BuyOrder(owner=owner, data=data,
+                         size=size, price=price, pricelimit=plimit,
+                         exectype=exectype, valid=valid)
+        order.addinfo(**kwargs)
+        return self._submit(order)
 
     def cancel(self, order):
         order_id = order.binance_order['orderId']
