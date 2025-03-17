@@ -133,6 +133,31 @@ class BinanceBroker(BrokerBase):
             self.open_orders.append(order)
         self.notify(order)
         return order
+    
+    def _process_order_trades(self, order, transact_time, trades):
+        comminfo = self.getcommissioninfo(order.data)
+        position = self.positions[order.data]
+        pprice_old = position.price
+        # size = float(executedQty)
+        date = dt.datetime.fromtimestamp(int(transact_time)/1000)
+        
+        for trade in trades:
+            price = float(trade['price'])
+            size = float(trade['qty']) if order.ordtype == Order.Buy else -float(trade['qty'])
+            psize, pprice, opened, closed = position.pseudoupdate(size, price)
+            openedvalue = opened * price if opened else 0.0
+            openedcomm = float(trade['commission']) if opened else 0.0
+            closedvalue = closed * price if closed else 0.0
+            closedcomm = float(trade['commission']) if closed else 0.0
+            margin = comminfo.margin
+            pnl = comminfo.profitandloss(-closed, pprice_old, pprice)
+
+            order.execute(date, size, price,
+                closed, closedvalue, closedcomm,
+                opened, openedvalue, openedcomm,
+                margin, pnl,
+                psize, pprice)
+            order.addcomminfo(comminfo)
 
     def buy(self, owner, data, size, price=None, plimit=None,
             exectype=None, valid=None, tradeid=0, oco=None,
