@@ -197,11 +197,11 @@ class ChickenStrategy(bt.Strategy):
 
     def _close_trade_position(self, order):
         sell_price = order.executed.price * (1 + self.p.target_profit)
-        sell_value = sell_price * order.size
+        sell_value = sell_price * order.executed.size
         min_order_value = float(self.store._min_order_in_target[self.symbol])
         
         if sell_value > min_order_value:
-            self.sell(exectype=bt.Order.Limit, size=order.size, price=sell_price)
+            self.sell(exectype=bt.Order.Limit, size=order.executed.size, price=sell_price)
 
     def _computes_trade_return(self, order):
         sell_price = order.executed.price
