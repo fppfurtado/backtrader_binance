@@ -5,6 +5,7 @@ import database as db
 from dotenv import load_dotenv
 from backtrader_binance import BinanceStore
 from binance.exceptions import BinanceAPIException
+from backtrader.utils.py3 import string_types
 
 logger = logging.getLogger('trader')
 
@@ -150,6 +151,40 @@ class ChickenStrategy(bt.Strategy):
             self.asset.low[index],
             self.asset.close[index]
         ]
+    
+    def buy(self, data=None,
+            size=None, price=None, plimit=None,
+            exectype=None, valid=None, tradeid=0, oco=None,
+            trailamount=None, trailpercent=None,
+            parent=None, transmit=True,
+            **kwargs):
+        if isinstance(data, string_types):
+            data = self.getdatabyname(data)
+        
+        data = data if data is not None else self.datas[0]
+
+        return self.broker.buy(
+                self, data,
+                size=size, price=price, plimit=plimit,
+                exectype=exectype, valid=valid,
+                **kwargs)
+    
+    def sell(self, data=None,
+            size=None, price=None, plimit=None,
+            exectype=None, valid=None, tradeid=0, oco=None,
+            trailamount=None, trailpercent=None,
+            parent=None, transmit=True,
+            **kwargs):
+        if isinstance(data, string_types):
+            data = self.getdatabyname(data)
+        
+        data = data if data is not None else self.datas[0]
+
+        return self.broker.sell(
+                self, data,
+                size=abs(size), price=price, plimit=plimit,
+                exectype=exectype, valid=valid,
+                **kwargs)
 
     def _open_trade_position(self):
         stake = self.broker.getcash()
