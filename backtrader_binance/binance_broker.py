@@ -85,30 +85,29 @@ class BinanceBroker(BrokerBase):
         elif binance_order_status == be.ORDER_STATUS_REJECTED:
             order.reject()
 
-    def _submit(self, owner, data, side, exectype, size, price, **kwargs):
-        type = self._ORDER_TYPES.get(exectype, ORDER_TYPE_MARKET)
-        symbol = data._name
-        binance_order = self._store.create_order(symbol, side, type, size, price, **kwargs)
+    def _submit(self, order):
+        type = self._ORDER_TYPES.get(order.exectype, be.ORDER_TYPE_MARKET)
+        symbol = order.data.symbol
+        side = be.SIDE_BUY if order.ordtype == Order.Buy else be.SIDE_SELL
+        size = abs(order.size) if order.size else None
+        binance_order = self._store.create_order(symbol, side, type, size, order.price, **order.info)
+        order.executed.remsize = float(binance_order['executedQty'])
+        order.submit()
         # print(1111, binance_order)
         # 1111 {'symbol': 'ETHUSDT', 'orderId': 15860400971, 'orderListId': -1, 'clientOrderId': 'EO7lLPcYNZR8cNEg8AOEPb', 'transactTime': 1707124560731, 'price': '0.00000000', 'origQty': '0.00220000', 'executedQty': '0.00220000', 'cummulativeQuoteQty': '5.10356000', 'status': 'FILLED', 'timeInForce': 'GTC', 'type': 'MARKET', 'side': 'BUY', 'workingTime': 1707124560731, 'fills': [{'price': '2319.80000000', 'qty': '0.00220000', 'commission': '0.00000220', 'commissionAsset': 'ETH', 'tradeId': 1297261843}], 'selfTradePreventionMode': 'EXPIRE_MAKER'}
-        order = BinanceOrder(owner, data, exectype, binance_order)
-        if binance_order['status'] in [ORDER_STATUS_FILLED, ORDER_STATUS_PARTIALLY_FILLED]:
-            avg_price =0.0
-            comm = 0.0
-            for f in binance_order['fills']:
-                comm += float(f['commission'])
-                avg_price += float(f['price'])
-            avg_price = self._store.format_price(symbol, avg_price/len(binance_order['fills']))
-            self._execute_order(
-                order,
-                dt.datetime.fromtimestamp(binance_order['transactTime'] / 1000),
-                float(binance_order['executedQty']),
-                float(avg_price),
-                float(binance_order['cummulativeQuoteQty']),
-                float(comm))
-        self._set_order_status(order, binance_order['status'])
-        if order.status == Order.Accepted:
-            self.open_orders.append(order)
+        # order = BinanceOrder(owner, data, exectype, binance_order)
+        match binance_order['status']:
+            case be.ORDER_STATUS_NEW:
+                order.accept()
+            case be.ORDER_STATUS_PARTIALLY_FILLED:
+                self._process_order_trades(order, binance_order['transactTime'], binance_order['fills'])
+                order.partial()
+            case be.ORDER_STATUS_FILLED:
+                self._process_order_trades(order, binance_order['transactTime'], binance_order['fills'])                
+                order.completed()    
+            case be.ORDER_STATUS_REJECTED:
+                order.reject()
+        
         self.notify(order)
         return order
     
