@@ -3,4 +3,5 @@ ConfigBinance/.env
 __pycache__
 .env
 *.db
+launch.json
 .vscode
