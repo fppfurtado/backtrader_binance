@@ -105,7 +105,7 @@ class ChickenStrategy(bt.Strategy):
     def notify_order(self, order):
         match order.status:
             case bt.Order.Completed:
-                log_message = f'{'BUY EXECUTED' if order.isbuy() else 'SELL EXECUTED'}({order.ref}, {order.executed.price:.2f}, {order.executed.size:.5f}) = {(order.executed.price * order.executed.size):.2f}'
+                log_message = f'{'BUY EXECUTED' if order.isbuy() else 'SELL EXECUTED'}({order.ref}, {order.executed.price:.2f}, {order.executed.size:.5f}) = {abs(order.executed.price * order.executed.size):.2f}'
                 self._log_info(log_message)
                 self._log_info(f'POSITION SIZE: {self.position.size:.5f}')
                 
