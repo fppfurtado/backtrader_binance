@@ -25,7 +25,7 @@ class BinanceBroker(BrokerBase):
         self.startingcash = self.cash = 0
         self.startingvalue = self.value = self.cash
 
-        self.open_orders = list()
+        self.open_orders = dict()
     
         self._store = store
         self._store.binance_socket.start_user_socket(self._handle_user_socket_message)
