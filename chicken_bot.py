@@ -207,9 +207,9 @@ class ChickenStrategy(bt.Strategy):
         sell_price = order.executed.price
         buy_price = order.executed.price/(1 + self.p.target_profit)
         order_return =  (sell_price - buy_price)*(-order.size)
-        self._log_info(f'TRADE RETURN = {round(order_return, 2)}')
+        self._log_info(f'TRADE RETURN = {order_return:.5f}')
         self._total_profit = self._total_profit + order_return
-        self._log_info(f'TOTAL PROFIT/LOSS = {round(self._total_profit, 2)}')
+        self._log_info(f'TOTAL PROFIT/LOSS = {self._total_profit:.5f}')
 
     def _save_in_database(self, order):
         db.save_trade(
