@@ -54,21 +54,11 @@ class BinanceBroker(BrokerBase):
         # 'm': False, 'M': True, 'O': 1707120960761, 'Z': '5.10296600', 'Y': '5.10296600', 'Q': '0.00000000', 'W': 1707120960761, 'V': 'EXPIRE_MAKER'}
         if msg['e'] == 'executionReport':
             if msg['s'] in self._store.symbols:
-                for o in self.open_orders:
-                    if o.binance_order['orderId'] == msg['i']:
-                        if msg['X'] in [be.ORDER_STATUS_FILLED, be.ORDER_STATUS_PARTIALLY_FILLED]:
-                            _dt = dt.datetime.fromtimestamp(int(msg['T']) / 1000)
-                            executed_size = float(msg['l'])
-                            executed_price = float(msg['L'])
-                            executed_value = float(msg['Z'])
-                            executed_comm = float(msg['n'])
-                            # print(_dt, executed_size, executed_price)
-                            self._execute_order(o, _dt, executed_size, executed_price, executed_value, executed_comm)
-                        self._set_order_status(o, msg['X'])
-
-                        if o.status not in [Order.Accepted, Order.Partial]:
-                            self.open_orders.remove(o)
-                        self.notify(o)
+                for binance_id, order in self.open_orders.items():
+                    if binance_id == msg['i']:
+                        trade = {'qty': msg['l'], 'price': msg['L'], 'commission': msg['n']}
+                        self._process_trading_message(order, msg['X'], msg['T'], [trade])
+                        break
         elif msg['e'] == 'error':
             raise msg
     
