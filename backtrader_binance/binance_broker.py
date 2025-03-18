@@ -2,7 +2,6 @@ import datetime as dt
 import binance.enums as be
 
 from collections import defaultdict, deque
-from math import copysign
 
 from backtrader.broker import BrokerBase
 from backtrader.order import *
