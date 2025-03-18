@@ -80,25 +80,38 @@ class BinanceBroker(BrokerBase):
         side = be.SIDE_BUY if order.ordtype == Order.Buy else be.SIDE_SELL
         size = abs(order.size) if order.size else None
         binance_order = self._store.create_order(symbol, side, type, size, order.price, **order.info)
+        
+        order.info['binance_id'] = binance_order['orderId']
         order.executed.remsize = float(binance_order['executedQty'])
         order.submit()
         # print(1111, binance_order)
         # 1111 {'symbol': 'ETHUSDT', 'orderId': 15860400971, 'orderListId': -1, 'clientOrderId': 'EO7lLPcYNZR8cNEg8AOEPb', 'transactTime': 1707124560731, 'price': '0.00000000', 'origQty': '0.00220000', 'executedQty': '0.00220000', 'cummulativeQuoteQty': '5.10356000', 'status': 'FILLED', 'timeInForce': 'GTC', 'type': 'MARKET', 'side': 'BUY', 'workingTime': 1707124560731, 'fills': [{'price': '2319.80000000', 'qty': '0.00220000', 'commission': '0.00000220', 'commissionAsset': 'ETH', 'tradeId': 1297261843}], 'selfTradePreventionMode': 'EXPIRE_MAKER'}
         # order = BinanceOrder(owner, data, exectype, binance_order)
-        match binance_order['status']:
+        self._process_trading_message(
+            order, binance_order['status'], 
+            binance_order['transactTime'], 
+            binance_order['fills']
+        )
+        
+        return order
+    
+    def _process_trading_message(self, order, status, transact_time, trades):
+        match status:
             case be.ORDER_STATUS_NEW:
+                self.open_orders.update({order.info['binance_id']: order})
                 order.accept()
             case be.ORDER_STATUS_PARTIALLY_FILLED:
-                self._process_order_trades(order, binance_order['transactTime'], binance_order['fills'])
+                self.open_orders.update({order.info['binance_id']: order})
+                self._process_order_trades(order, transact_time, trades)
                 order.partial()
             case be.ORDER_STATUS_FILLED:
-                self._process_order_trades(order, binance_order['transactTime'], binance_order['fills'])                
+                self.open_orders.pop(order.info['binance_id'], None)
+                self._process_order_trades(order, transact_time, trades)                
                 order.completed()    
             case be.ORDER_STATUS_REJECTED:
                 order.reject()
         
         self.notify(order)
-        return order
     
     def _process_order_trades(self, order, transact_time, trades):
         comminfo = self.getcommissioninfo(order.data)
