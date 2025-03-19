@@ -32,18 +32,6 @@ class BinanceBroker(BrokerBase):
     def start(self):
         pass
 
-    def _execute_order(self, order, date, executed_size, executed_price, executed_value, executed_comm):
-        order.execute(
-            date,
-            executed_size,
-            executed_price,
-            0, executed_value, executed_comm,
-            0, 0.0, 0.0,
-            0.0, 0.0,
-            0, 0.0)
-        pos = self.getposition(order.data, clone=False)
-        pos.update(copysign(executed_size, order.size), executed_price)
-
     def _handle_user_socket_message(self, msg):
         """https://binance-docs.github.io/apidocs/spot/en/#payload-order-update"""
         # print(msg)
@@ -62,18 +50,6 @@ class BinanceBroker(BrokerBase):
         elif msg['e'] == 'error':
             raise msg
     
-    def _set_order_status(self, order, binance_order_status):
-        if binance_order_status == be.ORDER_STATUS_CANCELED:
-            order.cancel()
-        elif binance_order_status == be.ORDER_STATUS_EXPIRED:
-            order.expire()
-        elif binance_order_status == be.ORDER_STATUS_FILLED:
-            order.completed()
-        elif binance_order_status == be.ORDER_STATUS_PARTIALLY_FILLED:
-            order.partial()
-        elif binance_order_status == be.ORDER_STATUS_REJECTED:
-            order.reject()
-
     def _submit(self, order):
         type = self._ORDER_TYPES.get(order.exectype, be.ORDER_TYPE_MARKET)
         symbol = order.data.symbol
