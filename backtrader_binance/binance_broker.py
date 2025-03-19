@@ -179,7 +179,12 @@ class BinanceBroker(BrokerBase):
         return pos
 
     def getvalue(self, datas=None):
-        self.value = self._store._value
+        if datas is not None:
+            value = 0
+            for data in datas:
+                value += self.getposition(data).size * data.close[0]            
+            self.value = value + self.cash
+
         return self.value
 
     def notify(self, order):
