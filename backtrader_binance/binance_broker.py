@@ -117,7 +117,6 @@ class BinanceBroker(BrokerBase):
         comminfo = self.getcommissioninfo(order.data)
         position = self.positions[order.data]
         pprice_old = position.price
-        # size = float(executedQty)
         date = dt.datetime.fromtimestamp(int(transact_time)/1000)
         
         for trade in trades:
@@ -137,6 +136,11 @@ class BinanceBroker(BrokerBase):
                 margin, pnl,
                 psize, pprice)
             order.addcomminfo(comminfo)
+
+            pos = self.getposition(order.data, clone=False)
+            pos.update(size, price, date)
+            self.cash -= abs(openedvalue)
+            self.cash += abs(closedvalue)
 
     def buy(self, owner, data, size, price=None, plimit=None,
             exectype=None, valid=None, tradeid=0, oco=None,
