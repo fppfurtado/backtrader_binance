@@ -181,7 +181,7 @@ class BinanceBroker(BrokerBase):
         self._store.get_balance()
 
         if cash <= self._store._cash:
-            self.startingcash = self.cash = cash
+            self.startingcash = self.cash = self.value = cash
 
     setcash = set_cash
 
