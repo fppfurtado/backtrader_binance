@@ -172,6 +172,7 @@ class ChickenStrategy(bt.Strategy):
             data = self.getdatabyname(data)
         
         data = data if data is not None else self.datas[0]
+        size = size if size is not None else self.getsizing(data, isbuy=True)
 
         return self.broker.buy(
                 self, data,
