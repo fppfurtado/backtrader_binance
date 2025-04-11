@@ -1,6 +1,11 @@
 import datetime as dt
 import backtrader as bt
 import pandas as pd
+import sys,os
+
+# Adiciona o diretório raiz ao sys.path para garantir que o Python consiga encontrar os módulos
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
 from backtrader_binance import BinanceStore
 from ConfigBinance.Config import Config  # Configuration file
 
@@ -64,9 +69,10 @@ if __name__ == '__main__':  # Entry point when running this script
     coin_target = 'USDT'  # the base ticker in which calculations will be performed
     symbol = 'BTC' + coin_target  # the ticker by which we will receive data in the format <CodeTickerBaseTicker>
 
+    config = Config()
     store = BinanceStore(
-        api_key=Config.BINANCE_API_KEY,
-        api_secret=Config.BINANCE_API_SECRET,
+        api_key=config.BINANCE_API_KEY,
+        api_secret=config.BINANCE_API_SECRET,
         coin_target=coin_target,
         testnet=False,
         # tld="us",  # for US customers => to use the 'Binance.us' url
