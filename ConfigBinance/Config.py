@@ -12,6 +12,6 @@ import dotenv, os
 
 class Config:
     def __init__(self):
-        dotenv.load_dotenv(dotenv_path='ConfigBinance/.env', override=True)        
+        dotenv.load_dotenv(dotenv_path='.env', override=True)        
         self.BINANCE_API_KEY = os.getenv('BINANCE_API_KEY')
         self.BINANCE_API_SECRET = os.getenv('BINANCE_API_SECRET')
